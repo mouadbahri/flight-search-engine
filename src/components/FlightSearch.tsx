@@ -3,6 +3,7 @@ import { searchFlights } from "../services/amadeus";
 import type { Flight } from "../types/flight";
 import { useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { formatDateTime, formatPrice } from "../utils/format";
 
 export default function FlightSearch() {
   const [origin, setOrigin] = useState("JFK");
@@ -11,12 +12,15 @@ export default function FlightSearch() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [filteredFlights, setFilteredFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [maxStops, setMaxStops] = useState<number>(2);
   const [airline, setAirline] = useState<string>("ALL");
 
   const handleSearch = async () => {
     setLoading(true);
+    setError(null);
+
     try {
       const data = await searchFlights(origin, destination, departureDate);
       // Map API results to simplified Flight type
@@ -32,17 +36,18 @@ export default function FlightSearch() {
             arrival: segments[segments.length - 1].arrival.at,
         };
         });
+
       setFlights(mappedFlights);
       setFilteredFlights(mappedFlights);
     } catch (err) {
       console.error(err);
-      alert("Error fetching flights");
-    }
+      setError("Failed to fetch flights. Please try again.");
+    } finally {
     setLoading(false);
-  };
+  }};
 
-  const priceChartData = filteredFlights.map((flight, index) => ({
-    index: index + 1,
+  const priceChartData = filteredFlights.map((flight) => ({
+    departure: new Date(flight.departure).toLocaleDateString(),
     price: flight.price,
   }));
 
@@ -149,11 +154,23 @@ export default function FlightSearch() {
       <div className="mb-8">
         <h3 className="font-semibold mb-2">Price Trend</h3>
 
+        {error && (
+          <p className="mb-4 text-red-600 font-medium">
+            {error}
+          </p>
+        )}
+
+        {loading && (
+          <p className="mb-4 text-gray-500">
+            Loading flights...
+          </p>
+        )}
+
         {priceChartData.length > 0 ? (
             <div className="w-full h-64 bg-white border rounded p-2">
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={priceChartData}>
-                <XAxis dataKey="index" />
+                <XAxis dataKey="departure" />
                 <YAxis />
                 <Tooltip />
                 <Line
@@ -176,10 +193,10 @@ export default function FlightSearch() {
             {filteredFlights.map((f) => (
               <li key={f.id} className="p-2 border rounded">
                 <div>
-                  <strong>{f.airline}</strong> — ${f.price}
+                  <strong>{f.airline}</strong> — {formatPrice(f.price)}
                 </div>
                 <div>
-                  Departure: {f.departure} | Arrival: {f.arrival}
+                  Departure: {formatDateTime(f.departure)} | Arrival: {formatDateTime(f.arrival)}
                 </div>
               </li>
             ))}
