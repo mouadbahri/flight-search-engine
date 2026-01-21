@@ -2,7 +2,7 @@ import { useState } from "react";
 import { searchFlights } from "../services/amadeus";
 import type { Flight } from "../types/flight";
 import { useEffect } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { formatDateTime, formatPrice } from "../utils/format";
 
 export default function FlightSearch() {
@@ -47,7 +47,7 @@ export default function FlightSearch() {
   }};
 
   const priceChartData = filteredFlights.map((flight) => ({
-    departure: new Date(flight.departure).toLocaleDateString(),
+    airline: flight.airline,
     price: flight.price,
   }));
 
@@ -167,19 +167,28 @@ export default function FlightSearch() {
         )}
 
         {priceChartData.length > 0 ? (
-            <div className="w-full h-64 bg-white border rounded p-2">
+            <div className="w-full h-72 bg-white border rounded-lg p-4 shadow-sm">
             <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={priceChartData}>
-                <XAxis dataKey="departure" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                    type="monotone"
-                    dataKey="price"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
+              <BarChart data={priceChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="airline"
+                  tick={{ fontSize: 12 }}
                 />
-                </LineChart>
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => `$${value}`}
+                />
+                <Tooltip
+                  formatter={(value) => value ? `$${value}` : ""}
+                />
+                <Bar
+                  dataKey="price"
+                  fill="#2563eb"
+                  radius={[6, 6, 0, 0]}
+                  activeBar={{ fill: "#1d4ed8" }}
+                />
+              </BarChart>
             </ResponsiveContainer>
             </div>
         ) : (
